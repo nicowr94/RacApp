@@ -1,21 +1,27 @@
 package com.example.vicky.androidui
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.widget.TextView
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
 
 
-var jsonResult = ""
-var postResult = ""
+
 
 class MainActivity : AppCompatActivity() {
 
-
+    var txtPass: TextView? = null
+    val client = OkHttpClient()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        txtPass= findViewById(R.id.password)
         login.setOnClickListener {
             if (username.text.toString().isNotEmpty() && password.text.toString().isNotEmpty())
                 funcion(this@MainActivity, username.text.toString(), password.text.toString())
@@ -24,76 +30,55 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-    fun funcion(activity: MainActivity, username: String, password: String){
-
-//        val connection = URL("http://localhost/ApiApp/login/"+username+"/"+password).openConnection() as HttpURLConnection
-//        val data = connection.inputStream.buffenetworkingReader().readText()
-//        val result = URL("http://localhost/ApiApp/login/"+username+"/"+password).readText()
-
-//        Toast.makeText(activity, 'data', Toast.LENGTH_SHORT).show();
+    fun funcion(activity: MainActivity, username: String, password: String) {
+        run("http://5574cbfe.ngrok.io/ApiApp/login/"+username+"/"+password, activity)
     }
 
+    fun run(url: String, activity: MainActivity) {
+        val request = Request.Builder()
+                .url(url)
+                .build()
 
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                this@MainActivity.runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Error de conexión", Toast.LENGTH_LONG).show()
+                }
+            }
+            override fun onResponse(call: Call, response: Response) {
 
-//    class makePostRequst(var activity: MainActivity, var username: String, var password: String) : AsyncTask<Void, Void, String>() {
-//
-//        override fun doInBackground(vararg params: Void?): String {
-//            val client = OkHttpClient()
-////            val requestBody = MultipartBody.Builder()
-////                    .setType(MultipartBody.FORM)
-////                    .addFormDataPart("username", username)
-////                    .addFormDataPart("password", password)
-////                    .build()
-//            val request = Request.Builder()
-//                    .url("http://localhost/ApiApp/login/"+username+"/"+password)
-////                    .post(requestBody)
-//                    .build()
-//            val response = client.newCall(request).execute()
-//            return response.body()!!.string()
-//        }
-//
-//        override fun onPostExecute(result: String?) {
-//            if (result != null) {
-//                val obj = JSONObject(result)
-//                postResult = obj.getString("message")
-//                makeJSONRequst(activity, username, password).execute()
-//            }
-//            super.onPostExecute(result)
-//        }
-//
-//    }
-//
-//    class makeJSONRequst(var activity: MainActivity, var username: String, var password: String) : AsyncTask<Void, Void, String>() {
-//
-//        override fun doInBackground(vararg params: Void?): String {
-//            val JSON = MediaType.parse("application/json; charset=utf-8")
-//            val client = OkHttpClient()
-//            val requestObject = com.example.vicky.androidui.Model.Request()
-//            requestObject.username = username
-//            requestObject.password = password
-//            val body = RequestBody.create(JSON, Gson().toJson(requestObject))
-//            val request = Request.Builder()
-//                    .url("http://192.168.43.212/login.php")
-//                    .post(body)
-//                    .build()
-//            val response = client.newCall(request).execute()
-//            return response.body()!!.string()
-//        }
-//
-//        override fun onPostExecute(result: String?) {
-//            if (result != null) {
-//                val obj = JSONObject(result)
-//                jsonResult = obj.getString("message")
-//            }
-//            val dialog = AlertDialog.Builder(activity)
-//            val view = activity.layoutInflater.inflate(R.layout.dialog_result, null)
-//            dialog.setView(view)
-//            view.findViewById<TextView>(R.id.json_result).text = jsonResult
-//            view.findViewById<TextView>(R.id.post_result).text = postResult
-//            dialog.show()
-//            super.onPostExecute(result)
-//        }
-//    }
+                if (!response.isSuccessful()) {
+                    this@MainActivity.runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Error de conexión", Toast.LENGTH_LONG).show()
+                    }
+                }else{
+                    val responseData = response.body()!!.string()
+                    val json = JSONObject(responseData)
+                    val owner = json.getString("estado")
+                    if (owner == "Ok") {
+                        val requestObject = Usuario()
+                        requestObject.nombre = json.getString("nombre")
+                        requestObject.apellido = json.getString("apellido")
+
+                        this@MainActivity.runOnUiThread {
+                            val intent: Intent = Intent(this@MainActivity, PrincipalActivity::class.java)
+                            startActivity(intent)
+                            }
+                    }
+                    else {
+                        this@MainActivity.runOnUiThread {
+                            password.setText("")
+                            Toast.makeText(this@MainActivity, "Usuario o contraseña equivocados", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+
+        })
+    }
+
+    fun funcion2(owner: String,activity: MainActivity) {
+         Toast.makeText(activity, "Good", Toast.LENGTH_SHORT).show()
+    }
 
 }
